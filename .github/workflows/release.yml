@@ -1,8 +1,9 @@
 name: Publish
 
 on:
-  release:
-    types: [ created ]
+  push:
+    tags:
+      - "v?[0-9]+.[0-9]+.[0-9]+*"
 
 env:
   logo: https://github.com/FNNDSC/cube-design/blob/master/_common-assets/ChRISlogo-color.svg.png?raw=true
@@ -34,16 +35,22 @@ jobs:
       - name: Publish
         run: poetry publish --build --username='__token__' --password='${{ secrets.PYPI_API_TOKEN }}'
 
-      - name: pdoc
-        run: |
-          poetry install --with=doc
-          poetry run pdoc \
-              --logo '${{ env.logo }}' \
-              --footer-text='Version ${{ github.ref_name }}' \
-              --docformat numpy \
-              chris -o pdoc
+
       - name: Deploy docs (version)
         uses: JamesIves/github-pages-deploy-action@v4.4.1
         with:
           branch: gh-pages
           folder: pdoc
+          clean: true
+          clean-exclude: 'v*.*.*/'
+          target-folder: "${{ github.ref_name }}"
+      - name: Deploy docs (latest)
+        uses: JamesIves/github-pages-deploy-action@v4.4.1
+        with:
+          branch: gh-pages
+          folder: pdoc
+          clean: false
+      - name: Github Release
+        uses: softprops/action-gh-release@v1
+        with:
+          body: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/${{ github.ref_name }}"
